@@ -7,6 +7,7 @@ import (
 type Config struct {
 	ServiceName string
 	Env         string
+	LogLevel    string
 }
 
 func SetupConfig() (Config, error) {
