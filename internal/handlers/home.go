@@ -24,3 +24,16 @@ func HomePage(w http.ResponseWriter, req *http.Request) {
 		}
 	}
 }
+
+func SecondPage(w http.ResponseWriter, req *http.Request) {
+	w.Write([]byte("Welcome to secondPage\n"))
+
+	ctx := req.Context()
+
+	value := ctx.Value("id").(string)
+
+	time.Sleep(1 * time.Second)
+
+	w.Write([]byte(value))
+
+}

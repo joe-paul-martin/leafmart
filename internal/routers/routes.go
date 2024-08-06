@@ -6,11 +6,12 @@ import (
 	"strings"
 )
 
-func (router *Mux) matchPattern(method, pattern string) (Route, map[string]interface{}) {
+func (router *Mux) matchPattern(method, pattern string) (Route, map[string]string) {
 	segments := splitPath(pattern)
 	fmt.Println(segments)
+outer:
 	for _, route := range router.routes {
-		params := make(map[string]interface{})
+		params := make(map[string]string)
 		routeSegments := splitPath(route.pattern)
 		if route.method == method && len(segments) == len(routeSegments) {
 			for i, segment := range segments {
@@ -20,7 +21,7 @@ func (router *Mux) matchPattern(method, pattern string) (Route, map[string]inter
 					paramValue := segment
 					params[paramName] = paramValue
 				} else if segment != routeSegment {
-					break
+					continue outer
 				}
 			}
 			return route, params
@@ -34,6 +35,9 @@ func splitPath(pattern string) []string {
 }
 
 func isDynamicSegment(segment string) bool {
+	if segment == "" {
+		return false
+	}
 	return string(segment[0]) == "{" && string(segment[len(segment)-1]) == "}"
 }
 

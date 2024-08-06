@@ -60,7 +60,6 @@ func (router *Mux) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	req = req.WithContext(ctx)
 	handler.ServeHTTP(w, req)
-	return
 }
 
 func (router *Mux) HandleFunc(method, pattern string, handler http.HandlerFunc, middlewares ...middleware.Middleware) {
