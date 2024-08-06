@@ -5,6 +5,6 @@ import (
 	"leafmart/internal/routers/middleware"
 )
 
-func (router *Router) RegisterRoutes() {
+func (router *Mux) RegisterRoutes() {
 	router.HandleFunc("GET", "/", handlers.HomePage, middleware.LoggerMiddleware)
 }

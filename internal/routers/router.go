@@ -5,73 +5,76 @@ import (
 	"leafmart/internal/config"
 	"leafmart/internal/routers/middleware"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
 )
 
+type Router interface {
+	ServeHTTP(http.ResponseWriter, *http.Request)
+	HandleFunc(string, string, http.HandlerFunc, ...middleware.Middleware)
+	Use(middleware.Middleware)
+}
+
 type Route struct {
-	method          string
-	pattern         string
-	middlewareChain middleware.MiddlewareChain
-	handler         http.HandlerFunc
+	method      string
+	pattern     string
+	middlewares middleware.MiddlewareChain
+	handler     http.HandlerFunc
 }
 
-type Router struct {
-	routes []Route
+type Mux struct {
+	routes            []Route
+	commonmiddlewares middleware.MiddlewareChain
 }
 
-func NewRouter() *Router {
-	return &Router{}
+func NewRouter() *Mux {
+	return &Mux{}
 }
 
-// func (router *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-// 	for _, route := range router.routes {
-// 		if req.Method == route.method && strings.HasPrefix(req.URL.Path, route.pattern) {
-//
-// 			route.handler.ServeHTTP(w, req)
-// 			return
-// 		}
-// 	}
-// 	http.NotFound(w, req)
-// }
+func (router *Mux) Use(middleware middleware.Middleware) {
+	router.commonmiddlewares = append(router.commonmiddlewares, middleware)
+}
 
-func (router *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	for _, route := range router.routes {
-		if req.Method == route.method && strings.HasPrefix(req.URL.Path, route.pattern) {
-			ctx, cancel := context.WithTimeout(req.Context(), 2*time.Second)
-			defer cancel()
+func (router *Mux) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	combinedMiddlewares := []middleware.Middleware{}
+	if len(router.commonmiddlewares) > 0 {
+		combinedMiddlewares = append(combinedMiddlewares, router.commonmiddlewares...)
+	}
 
-			req = req.WithContext(ctx)
+	route, params := router.matchPattern(req.Method, req.URL.Path)
+	handler := route.handler
+	ctx, cancel := context.WithTimeout(req.Context(), 2*time.Second)
+	defer cancel()
 
-			handler := route.handler
-			for i := len(route.middlewareChain) - 1; i >= 0; i-- {
-				handler = route.middlewareChain[i](handler)
-			}
-			handler.ServeHTTP(w, req)
-			return
+	if len(params) > 0 {
+		for key, value := range params {
+			ctx = context.WithValue(ctx, key, value)
 		}
 	}
-	http.NotFound(w, req)
+
+	combinedMiddlewares = append(combinedMiddlewares, route.middlewares...)
+	for i := len(combinedMiddlewares) - 1; i >= 0; i-- {
+		handler = combinedMiddlewares[i](handler)
+	}
+
+	req = req.WithContext(ctx)
+	handler.ServeHTTP(w, req)
+	return
 }
 
-// func (router *Router) HandleFunc(method, pattern string, handler http.HandlerFunc) {
-// 	router.routes = append(router.routes, Route{method: method, pattern: pattern, handler: handler})
-// }
-
-func (router *Router) HandleFunc(method, pattern string, handler http.HandlerFunc, middlewares ...middleware.Middleware) {
+func (router *Mux) HandleFunc(method, pattern string, handler http.HandlerFunc, middlewares ...middleware.Middleware) {
 
 	route := Route{
-		method:          method,
-		pattern:         pattern,
-		middlewareChain: middlewares,
-		handler:         handler,
+		method:      method,
+		pattern:     pattern,
+		middlewares: middlewares,
+		handler:     handler,
 	}
 	router.routes = append(router.routes, route)
 }
 
-func InitRouter(config config.Config) *Router {
+func InitRouter(config config.Config) *Mux {
 
 	if config.Env == "DEBUG" {
 		gin.SetMode(gin.DebugMode)
