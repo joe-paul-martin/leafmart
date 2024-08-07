@@ -5,8 +5,6 @@ import (
 	"leafmart/internal/config"
 	"leafmart/internal/routers/middleware"
 	"net/http"
-
-	"github.com/gin-gonic/gin"
 )
 
 type Router interface {
@@ -66,12 +64,6 @@ func (router *Mux) HandleFunc(method, pattern string, handler http.HandlerFunc, 
 }
 
 func InitRouter(config config.Config) *Mux {
-
-	if config.Env == "DEBUG" {
-		gin.SetMode(gin.DebugMode)
-	} else {
-		gin.SetMode(gin.ReleaseMode)
-	}
 
 	router := NewRouter()
 	router.RegisterRoutes()

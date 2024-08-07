@@ -16,7 +16,7 @@ func LoggerMiddleware(next http.Handler) http.Handler {
 
 		next.ServeHTTP(w, req)
 
-		logger.Info("ending the request", zap.Any("elapsed time", time.Since(start).Milliseconds()))
+		logger.Info("ending the request", zap.Any("time", start.Format(time.RFC3339)), zap.Any("elapsed time", time.Since(start).Milliseconds()))
 	}
 	return http.HandlerFunc(fn)
 }
