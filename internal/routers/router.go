@@ -5,27 +5,20 @@ import (
 	"leafmart/internal/config"
 	"leafmart/internal/routers/middleware"
 	"net/http"
-	"time"
 
 	"github.com/gin-gonic/gin"
 )
 
 type Router interface {
 	ServeHTTP(http.ResponseWriter, *http.Request)
-	HandleFunc(string, string, http.HandlerFunc, ...middleware.Middleware)
+	HandleFunc(string, string, http.HandlerFunc, ...func(http.Handler) http.Handler)
 	Use(middleware.Middleware)
-}
-
-type Route struct {
-	method      string
-	pattern     string
-	middlewares middleware.MiddlewareChain
-	handler     http.HandlerFunc
+	Route(pattern string, fn func(r Router)) Router
 }
 
 type Mux struct {
 	routes            []Route
-	commonmiddlewares middleware.MiddlewareChain
+	commonmiddlewares middleware.Middleware
 }
 
 func NewRouter() *Mux {
@@ -33,19 +26,18 @@ func NewRouter() *Mux {
 }
 
 func (router *Mux) Use(middleware middleware.Middleware) {
-	router.commonmiddlewares = append(router.commonmiddlewares, middleware)
+	router.commonmiddlewares = append(router.commonmiddlewares, middleware...)
 }
 
 func (router *Mux) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	combinedMiddlewares := []middleware.Middleware{}
+	combinedMiddlewares := middleware.Middleware{}
 	if len(router.commonmiddlewares) > 0 {
 		combinedMiddlewares = append(combinedMiddlewares, router.commonmiddlewares...)
 	}
 
 	route, params := router.matchPattern(req.Method, req.URL.Path)
 	handler := route.handler
-	ctx, cancel := context.WithTimeout(req.Context(), 2*time.Second)
-	defer cancel()
+	ctx := req.Context()
 
 	if len(params) > 0 {
 		for key, value := range params {
@@ -62,7 +54,7 @@ func (router *Mux) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	handler.ServeHTTP(w, req)
 }
 
-func (router *Mux) HandleFunc(method, pattern string, handler http.HandlerFunc, middlewares ...middleware.Middleware) {
+func (router *Mux) HandleFunc(method, pattern string, handler http.HandlerFunc, middlewares ...func(http.Handler) http.Handler) {
 
 	route := Route{
 		method:      method,

@@ -8,8 +8,9 @@ import (
 	"go.uber.org/zap"
 )
 
-func LoggerMiddleware(next http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, req *http.Request) {
+func LoggerMiddleware(next http.Handler) http.Handler {
+
+	fn := func(w http.ResponseWriter, req *http.Request) {
 		start := time.Now()
 		logger.Info("starting the request", zap.Any("time", start.Format(time.RFC3339)))
 
@@ -17,4 +18,5 @@ func LoggerMiddleware(next http.HandlerFunc) http.HandlerFunc {
 
 		logger.Info("ending the request", zap.Any("elapsed time", time.Since(start).Milliseconds()))
 	}
+	return http.HandlerFunc(fn)
 }

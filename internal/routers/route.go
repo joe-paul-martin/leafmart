@@ -2,9 +2,21 @@ package routers
 
 import (
 	"fmt"
+	"leafmart/internal/routers/middleware"
 	"net/http"
 	"strings"
 )
+
+type Routes interface {
+	matchPattern(string, string) (Route, map[string]string)
+}
+
+type Route struct {
+	method      string
+	pattern     string
+	middlewares middleware.Middleware
+	handler     http.Handler
+}
 
 func (router *Mux) matchPattern(method, pattern string) (Route, map[string]string) {
 	segments := splitPath(pattern)
@@ -27,7 +39,7 @@ outer:
 			return route, params
 		}
 	}
-	return Route{handler: http.NotFound}, nil
+	return Route{handler: http.HandlerFunc(http.NotFound)}, nil
 }
 
 func splitPath(pattern string) []string {

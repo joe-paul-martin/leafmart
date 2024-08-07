@@ -4,7 +4,6 @@ import (
 	"leafmart/internal/config"
 	"leafmart/internal/logger"
 	"leafmart/internal/routers"
-	"leafmart/internal/routers/middleware"
 	"net/http"
 )
 
@@ -17,7 +16,7 @@ func main() {
 
 	router := routers.InitRouter(config)
 
-	router.Use(middleware.LoggerMiddleware)
+	// router.Use(middleware.LoggerMiddleware)
 
 	http.ListenAndServe("localhost:8080", router)
 
