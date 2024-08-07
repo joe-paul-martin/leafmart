@@ -8,10 +8,12 @@ import (
 )
 
 type Router interface {
+	Routes
+
 	ServeHTTP(http.ResponseWriter, *http.Request)
 	HandleFunc(string, string, http.HandlerFunc, ...func(http.Handler) http.Handler)
 	Use(middleware.Middleware)
-	Route(pattern string, fn func(r Router)) Router
+	Route(pattern string, fn func(r Router))
 }
 
 type Mux struct {
@@ -25,6 +27,20 @@ func NewRouter() *Mux {
 
 func (router *Mux) Use(middleware middleware.Middleware) {
 	router.commonmiddlewares = append(router.commonmiddlewares, middleware...)
+}
+
+func (router *Mux) Route(pattern string, fn func(r Router)) {
+	subRouter := NewRouter()
+
+	fn(subRouter)
+
+	for i, route := range subRouter.routes {
+
+		subRouter.routes[i].pattern = pattern + subRouter.routes[i].pattern
+		route.middlewares = append(route.middlewares, subRouter.commonmiddlewares...)
+	}
+
+	router.routes = append(router.routes, subRouter.routes...)
 }
 
 func (router *Mux) ServeHTTP(w http.ResponseWriter, req *http.Request) {

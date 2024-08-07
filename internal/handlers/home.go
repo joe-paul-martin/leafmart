@@ -22,3 +22,8 @@ func SecondPage(w http.ResponseWriter, req *http.Request) {
 	w.Write([]byte(value))
 
 }
+
+func AdminPage(w http.ResponseWriter, req *http.Request) {
+	w.Write([]byte("Welcome to admin Page\n"))
+
+}
