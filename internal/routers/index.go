@@ -13,4 +13,6 @@ func (router *Mux) RegisterRoutes() {
 	router.Route("/admin", func(r Router) {
 		r.HandleFunc("GET", "/home", handlers.AdminPage)
 	})
+
+	router.HandleFunc("POST", "/login", handlers.AuthenticationPage, middleware.AuthenticationMiddlware)
 }
